@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+{% block content %}
+
+{% macro render_table(task_list) %}
+<div class="card shadow-sm border-0 overflow-hidden" style="border-radius: 15px;">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-muted small">
+                <tr>
+                    <th class="ps-4">CUSTOMER / CONTACT</th>
+                    <th>TIME WINDOW</th>
+                    <th>STATUS</th>
+                    <th>ADDRESS (Maps)</th>
+                    <th class="text-center pe-4">ACTION / RUNNER</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if task_list and task_list|length > 0 %}
+                    {% for row in task_list %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold">{{ row.stall_display_name|default('Unknown Stall') }}</div>
+                            {% if session.role == 'COLLECTOR' and row.seller_phone %}
+                                <a href="tel:{{ row.seller_phone }}" class="text-decoration-none small text-success fw-bold">📞 {{ row.seller_phone }}</a>
+                            {% endif %}
+                            <div class="text-muted" style="font-size: 0.7rem;">Est: {{ row.estimated_weight_kg|default(0)|float }} kg</div>
+                        </td>
+                        <td>
+                            <span class="badge bg-dark text-white px-2">
+                                {{ row.preferred_time_slot|default('Anytime') }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if row.status == 'Pending' %}<span class="badge bg-warning text-dark px-3 rounded-pill">Pending</span>
+                            {% elif row.status == 'Assigned' %}<span class="badge bg-primary px-3 rounded-pill">Assigned</span>
+                            {% elif row.status == 'Collected' %}<span class="badge bg-info text-white px-3 rounded-pill">Collected</span>
+                            {% else %}<span class="badge bg-success px-3 rounded-pill">Verified</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if row.collection_address %}
+                                <a href="https://www.google.com/maps/search/?api=1&query={{ row.collection_address|urlencode }}+Melaka" target="_blank" class="text-decoration-none">
+                                    <span class="text-primary small fw-bold">📍 {{ row.collection_address|truncate(25) }}</span>
+                                </a>
+                            {% else %}
+                                <span class="text-muted small">No address available</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center pe-4" style="min-width: 180px;">
+                            {% if session.role == 'COLLECTOR' %}
+                                {# --- DRIVER VIEW (Original Features Maintained) --- #}
+                                {% if row.status == 'Pending' %}
+                                    <form action="/collector/accept_job/{{ row.request_id }}" method="POST">
+                                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm fw-bold">🤝 Accept Job</button>
+                                    </form>
+                                {% elif row.status == 'Assigned' %}
+                                    {% if row.collector_id|string == session.user_id|string %}
+                                        <a href="/scan/{{ row.request_id }}" class="btn btn-sm btn-dark rounded-pill px-3 shadow-sm">📸 Scan QR</a>
+                                    {% else %}
+                                        <span class="badge bg-secondary text-white px-2 rounded-pill small" style="font-size: 0.75rem;">Taken by another runner</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-success small fw-bold">✔ Processed</span>
+                                {% endif %}
+                            {% else %}
+                                {# --- SELLER VIEW (New Cancellation Management) --- #}
+                                {% if row.status == 'Assigned' %}
+                                    <div class="standard-status-text text-start border-start border-primary border-3 ps-2">
+                                        <div class="small fw-bold text-primary">{{ row.runner_name or 'Assigned Runner' }}</div>
+                                        <div class="small text-muted">🚗 {{ row.runner_plate or 'Vehicle' }}</div>
+                                    </div>
+                                {% else %}
+                                    <div class="standard-status-text">
+                                        <span class="text-success small fw-bold">✔ Processed</span>
+                                    </div>
+                                {% endif %}
+
+                                {% if row.status == 'Pending' %}
+                                    <div class="standard-status-text text-muted small py-1">Awaiting Assignment</div>
+                                    
+                                    <div class="cancel-action-wrapper d-none">
+                                        <form action="/request/cancel/{{ row.request_id }}" method="POST" 
+                                              onsubmit="return confirm('Are you sure you want to cancel this pending recycling request?');" class="m-0">
+                                            <button type="submit" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold w-100" style="font-size: 0.75rem;">
+                                                Cancel Request
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted small">
+                            📦 No active requests matching this schedule block.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endmacro %}
+
+{% if session.role == 'COLLECTOR' and profile %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 bg-white p-3 h-100" style="border-radius: 15px;">
+            <small class="text-muted fw-bold">VEHICLE PLATE</small>
+            <h4 class="text-success fw-bold mt-1">{{ profile.vehicle_plate }}</h4>
+            <div class="d-flex align-items-center justify-content-between mt-2 p-2 bg-light rounded">
+                <span class="small fw-bold {% if profile.is_on_duty %}text-success{% else %}text-danger{% endif %}">
+                    {% if profile.is_on_duty %}ON DUTY{% else %}OFF DUTY{% endif %}
+                </span>
+                <form action="/collector/toggle_duty" method="POST" id="statusForm">
+                    <label class="switch">
+                        <input type="checkbox" {% if profile.is_on_duty %}checked{% endif %} onchange="document.getElementById('statusForm').submit()">
+                        <span class="slider"></span>
+                    </label>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0 bg-white p-3 h-100" style="border-radius: 15px;">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted fw-bold">LORRY LOAD CAPACITY</small>
+                <span class="fw-bold">{{ current_load|default('0.0') }} / {{ profile.max_capacity_liters|default(200)|int }} L</span>
+            </div>
+            {% set max_cap = profile.max_capacity_liters|float if profile.max_capacity_liters|float > 0 else 200.0 %}
+            {% set pct = (current_load|default(0)|float / max_cap * 100)|int %}
+            {% if pct > 100 %}{% set pct = 100 %}{% endif %}
+            <div class="progress mt-3" style="height: 18px; border-radius: 10px;">
+                <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" style="width: {{ pct }}%">{{ pct }}%</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-white p-3 h-100" style="border-radius: 15px;">
+            <small class="text-muted fw-bold">MY WALLET BALANCE</small>
+            <h4 class="text-primary fw-bold mt-1">RM {{ "%.2f"|format(wallet_balance|default(0.00)|float) }}</h4>
+            <div class="p-2 bg-light rounded text-center small text-muted" style="font-size: 0.75rem;">Base: RM 2.00 + RM 0.20/Liter</div>
+            
+            <form action="/collector/unload" method="POST" class="mt-2">
+                <button type="submit" class="btn btn-warning btn-sm w-100 fw-bold rounded-pill shadow-sm py-2 mb-2">
+                    🚚 Empty Lorry at Dropoff Center
+                </button>
+            </form>
+
+            <form action="/wallet/withdraw" method="GET">
+                <button type="submit" class="btn btn-outline-success btn-sm w-100 fw-bold rounded-pill shadow-sm py-1">
+                    💰 Withdraw Earnings
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row align-items-center mb-4">
+    <div class="col-md-5">
+        <h3 class="fw-bold mb-0">🚚 Logistics Hub</h3>
+    </div>
+    <div class="col-md-7 text-end d-flex justify-content-end align-items-center gap-2">
+        {% if session.role == 'SELLER' %}
+            <button id="toggleCancelBtn" class="btn btn-outline-danger rounded-pill px-4 fw-bold shadow-sm" onclick="toggleCancellationMode()">
+                ⚙️ Manage Requests
+            </button>
+        {% endif %}
+        
+        <form action="/tasks" method="GET" class="d-inline-block m-0 w-100" style="max-width: 350px;">
+            <div class="input-group shadow-sm rounded-pill overflow-hidden border">
+                <input type="text" name="search" class="form-control border-0 px-4" placeholder="Search customer..." value="{{ search_val|default('') }}">
+                <button type="submit" class="btn btn-dark px-4">Search</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active rounded-pill px-4 me-2 border shadow-sm" data-bs-toggle="pill" data-bs-target="#active-pane">
+            Active Requests ({{ pending|length if pending else 0 }})
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link rounded-pill px-4 border shadow-sm text-muted" data-bs-toggle="pill" data-bs-target="#past-pane">
+            Completed History ({{ completed|length if completed else 0 }})
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="active-pane">
+        <div class="bg-white p-2 rounded-pill mb-4 shadow-sm border d-inline-flex">
+            <ul class="nav nav-pills" id="dayTab" role="tablist">
+                <li class="nav-item"><button class="nav-link active rounded-pill btn-sm" data-bs-toggle="pill" data-bs-target="#mon-wed">Mon-Wed</button></li>
+                <li class="nav-item"><button class="nav-link rounded-pill btn-sm" data-bs-toggle="pill" data-bs-target="#wed-fri">Wed-Fri</button></li>
+                <li class="nav-item"><button class="nav-link rounded-pill btn-sm" data-bs-toggle="pill" data-bs-target="#sat-sun">Sat-Sun</button></li>
+                <li class="nav-item"><button class="nav-link rounded-pill btn-sm" data-bs-toggle="pill" data-bs-target="#all-tasks-tab">All Tasks</button></li>
+            </ul>
+        </div>
+
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="mon-wed">{{ render_table(pending | selectattr("preferred_day_range", "eq", "Monday - Wednesday") | list if pending else []) }}</div>
+            <div class="tab-pane fade" id="wed-fri">{{ render_table(pending | selectattr("preferred_day_range", "eq", "Wednesday - Friday") | list if pending else []) }}</div>
+            <div class="tab-pane fade" id="sat-sun">{{ render_table(pending | selectattr("preferred_day_range", "eq", "Saturday - Sunday") | list if pending else []) }}</div>
+            <div class="tab-pane fade" id="all-tasks-tab">{{ render_table(pending) }}</div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="past-pane">
+        <div class="card shadow-sm border-0 overflow-hidden" style="border-radius: 15px;">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr class="text-muted small">
+                        <th class="ps-4">CUSTOMER</th>
+                        <th>FINALIZED DATE</th>
+                        <th>AMOUNT (RM)</th>
+                        <th class="text-center pe-4">STATUS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if completed and completed|length > 0 %}
+                        {% for row in completed %}
+                        <tr class="opacity-75">
+                            <td class="ps-4">
+                                <div class="fw-bold">{{ row.stall_display_name|default('Stall') }}</div>
+                                <small class="text-muted">{{ row.actual_liters|default(0)|float }}L Collected</small>
+                            </td>
+                            <td>{{ row.requested_date.strftime('%d %b %Y') if row.requested_date and row.requested_date.strftime else row.requested_date|default('N/A') }}</td>
+                            <td class="fw-bold text-primary">
+                                RM {{ (2.00 + (row.actual_liters|default(0)|float * 0.20))|round(2) }}
+                            </td>
+                            <td class="text-center pe-4">
+                                <span class="text-success small fw-bold">✔ Verified</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted small">
+                                📋 No historical entries recorded yet.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleCancellationMode() {
+    const cancelWrappers = document.querySelectorAll('.cancel-action-wrapper');
+    const standardTexts = document.querySelectorAll('.standard-status-text');
+    const actionControlBtn = document.getElementById('toggleCancelBtn');
+    
+    cancelWrappers.forEach(el => el.classList.toggle('d-none'));
+    standardTexts.forEach(el => el.classList.toggle('d-none'));
+
+    if (actionControlBtn.classList.contains('btn-outline-danger')) {
+        actionControlBtn.innerHTML = "❌ Exit Management";
+        actionControlBtn.classList.remove('btn-outline-danger');
+        actionControlBtn.classList.add('btn-secondary');
+    } else {
+        actionControlBtn.innerHTML = "⚙️ Manage Requests";
+        actionControlBtn.classList.remove('btn-secondary');
+        actionControlBtn.classList.add('btn-outline-danger');
+    }
+}
+</script>
+
+<style>
+    .nav-pills .nav-link.active { background-color: #212529; color: white !important; }
+    .nav-pills .nav-link { color: #666; font-weight: 600; font-size: 0.85rem; }
+    .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: #198754; }
+    input:checked + .slider:before { transform: translateX(18px); }
+</style>
+{% endblock %}

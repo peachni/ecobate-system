@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="mb-4">
+    <h3 class="fw-bold">💰 UCO Pricing Manager</h3>
+    <p class="text-muted">Adjust the payout rates for different oil grades in Melaka.</p>
+</div>
+
+<div class="row">
+    {% for p in prices %}
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm border-0" style="border-radius: 15px;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-success bg-opacity-10 text-success px-3">{{ p.grade_name }}</span>
+                    <small class="text-muted">Last Update: {{ p.effective_date }}</small>
+                </div>
+                
+                <h6 class="text-muted small fw-bold">CURRENT RATE</h6>
+                <h2 class="fw-bold mb-4">RM {{ p.rate_per_liter }} <small class="fs-6 text-muted">/ Liter</small></h2>
+
+                <!-- Update Form -->
+                <form method="POST" class="mt-3">
+                    <input type="hidden" name="price_id" value="{{ p.price_id }}">
+                    <div class="input-group mb-2">
+                        <span class="input-group-text bg-white border-end-0">RM</span>
+                        <input type="number" name="new_rate" class="form-control border-start-0" 
+                               step="0.01" placeholder="0.00" required>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100 rounded-pill btn-sm fw-bold">Update Rate</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="alert alert-warning border-0 shadow-sm mt-4" style="border-radius: 12px;">
+    <small><strong>Note:</strong> Changing these rates will only affect <b>future</b> collections. Past transaction data is protected by the database's historical snapshot logic.</small>
+</div>
+{% endblock %}

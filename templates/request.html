@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- Professional Back Button -->
+<div class="mb-4">
+    <a href="/" class="btn-back">
+        <span class="btn-back-icon">←</span> Back to My Wallet
+    </a>
+</div>
+
+<div class="container pb-5">
+    <h2 class="mb-4 fw-bold text-center">Create An Appointment</h2>
+    
+    <div class="card shadow-sm border-0 p-4" style="border-radius: 20px; background-color: #ffffff;">
+        <form method="POST" action="/request/new" class="needs-validation" novalidate enctype="multipart/form-data">
+            <div class="row g-4">
+                
+                <!-- 1. Melaka Area Selection -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Select Melaka Area</label>
+                    <select id="areaSelect" class="form-select form-select-lg border-2" onchange="updateAreaDetails()" required>
+                        <option value="" selected disabled>-- Choose Area --</option>
+                        {% for area in areas %}
+                            <option value="{{ area.area_name }}" 
+                                    data-postcode="{{ area.postcode }}">
+                                {{ area.area_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">Please select your location area.</div>
+                </div>
+
+                <!-- 2. Auto-filled Postcode -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Collection Postcode</label>
+                    <input type="text" name="request_postcode" id="postcodeDisplay" 
+                           class="form-control form-control-lg bg-light border-2" 
+                           placeholder="Postcode auto-fills" readonly required>
+                </div>
+
+                <!-- Logistics Hint Box -->
+                <div id="logisticsHint" class="col-12" style="display: none;">
+                    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-0" style="border-radius: 12px; background-color: #eef7ff; color: #0056b3;">
+                        <span class="fs-4 me-3">🚚</span>
+                        <div>
+                            <strong>Logistics Notice:</strong> 
+                            A specialized collector for the <span id="hintArea" class="fw-bold"></span> zone will be scheduled for this pickup based on postcode <span id="hintPostcode" class="fw-bold"></span>.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Preferred Day & Time -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Preferred Day Window</label>
+                    <select name="day_range" class="form-select form-select-lg border-2" required>
+                        <option value="" selected disabled>Select Day Window</option>
+                        <option value="Monday - Wednesday">Monday - Wednesday</option>
+                        <option value="Wednesday - Friday">Wednesday - Friday</option>
+                        <option value="Saturday - Sunday">Saturday - Sunday</option>
+                        <option value="Anyday">Anyday</option>
+                    </select>
+                    <div class="invalid-feedback">Please select a preferred day window.</div>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Preferred Time Slot</label>
+                    <select name="time_slot" class="form-select form-select-lg border-2" required>
+                        <option value="" selected disabled>Select Time Slot</option>
+                        <option>9am - 12pm</option>
+                        <option>12pm - 4pm</option>
+                        <option>4pm - 9pm</option>
+                    </select>
+                    <div class="invalid-feedback">Please select a preferred time.</div>
+                </div>
+
+                <!-- 4. Contact Information -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Contact Phone</label>
+                    <input type="text" name="phone" class="form-control form-control-lg border-2" 
+                           value="{{ user.phone_number }}" pattern="^\+601[0-9]{8,9}$" required>
+                    <div class="invalid-feedback">Use format: +601XXXXXXXX</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Customer Name</label>
+                    <input type="text" class="form-control form-control-lg bg-light border-2" value="{{ user.full_name }}" readonly>
+                </div>
+
+                <!-- 5. Full Address -->
+                <div class="col-12">
+                    <label class="form-label fw-bold">Full Collection Address</label>
+                    <textarea name="address" class="form-control border-2" rows="3" placeholder="No. House, Street Name, Taman..." required></textarea>
+                    <div class="invalid-feedback">Address is required for the runner to find you.</div>
+                </div>
+
+                <!-- 6. Weight & Image -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Estimate Weight of UCO (kg)</label>
+                    <input type="number" name="weight" class="form-control form-control-lg border-2" placeholder="0" min="5" required>
+                    <div class="invalid-feedback">Minimum collection weight is 5kg.</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Upload image (Optional)</label>
+                    <label for="uco_image" class="border border-dashed p-3 text-center rounded d-block bg-light" style="cursor:pointer; border: 2px dashed #ccc; min-height: 120px;">
+                        <img id="image-preview" src="#" style="display:none; max-height:100px; margin:auto; border-radius: 8px;">
+                        <div id="upload-placeholder">
+                            <span class="fs-3">📷</span><br>
+                            <span class="text-success fw-bold small">Upload photo of oil</span>
+                        </div>
+                        <input type="file" name="uco_image" id="uco_image" class="visually-hidden" accept="image/*" onchange="previewImage(event)">
+                    </label>
+                </div>
+
+                <!-- 7. Remarks -->
+                <div class="col-12">
+                    <label class="form-label fw-bold">Additional Remarks (Optional)</label>
+                    <input type="text" name="remarks" class="form-control form-control-lg border-2" placeholder="e.g. Leave outside gate">
+                </div>
+
+                <div class="col-12 text-center mt-5">
+                    <button type="submit" class="btn btn-success btn-lg px-5 py-3 fw-bold shadow-sm" style="background-color: #198754; border: none; width: 320px; border-radius: 12px;">
+                        Submit Appointment Request
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// 1. Logic to update Postcode and Logistics Hint
+function updateAreaDetails() {
+    const areaSelect = document.getElementById('areaSelect');
+    const postcodeField = document.getElementById('postcodeDisplay');
+    const hintBox = document.getElementById('logisticsHint');
+    const hintArea = document.getElementById('hintArea');
+    const hintPostcode = document.getElementById('hintPostcode');
+    
+    const selectedOption = areaSelect.options[areaSelect.selectedIndex];
+    const postcode = selectedOption.getAttribute('data-postcode');
+    
+    if (postcode) {
+        postcodeField.value = postcode;
+        hintBox.style.display = 'block';
+        hintArea.innerText = selectedOption.value;
+        hintPostcode.innerText = postcode;
+    }
+}
+
+// 2. Image Preview Logic
+function previewImage(event) {
+    const reader = new FileReader();
+    reader.onload = function(){
+        const output = document.getElementById('image-preview');
+        output.src = reader.result;
+        output.style.display = 'block';
+        document.getElementById('upload-placeholder').style.display = 'none';
+    };
+    if(event.target.files[0]) reader.readAsDataURL(event.target.files[0]);
+}
+
+// 3. Bootstrap Validation Logic
+(() => {
+  'use strict'
+  const forms = document.querySelectorAll('.needs-validation')
+  Array.from(forms).forEach(form => {
+    form.addEventListener('submit', event => {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false)
+  })
+})()
+</script>
+{% endblock %}

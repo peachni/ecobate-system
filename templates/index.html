@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    /* Professional Arus-style Branding */
+    :root { --eco-green: #76b852; --dark-eco: #198754; }
+    .hero-title { font-size: 3.5rem; font-weight: 800; line-height: 1.1; color: #222; }
+    .hero-sub { color: #777; font-size: 1.1rem; margin: 20px 0; }
+    .phone-mockup {
+        width: 280px; height: 550px; background: white; border: 12px solid #222;
+        border-radius: 40px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        position: relative; overflow: hidden; margin: auto;
+    }
+    .phone-screen { padding: 15px; }
+    .graph-placeholder {
+        height: 120px; background: linear-gradient(0deg, #e9f7ef 0%, #ffffff 100%);
+        border-radius: 15px; margin: 15px 0; border-bottom: 2px solid #76b852;
+    }
+    .promo-card {
+        background: white; border-radius: 10px; padding: 8px; margin-bottom: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; gap: 10px; font-size: 0.75rem;
+    }
+    .stat-card { border-radius: 20px; border: none; transition: transform 0.2s ease; background: #fff; }
+    .stat-card:hover { transform: translateY(-5px); }
+    .price-item { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 12px; padding: 10px; }
+    .qr-container { background: #f8f9fa; border-radius: 15px; padding: 20px; cursor: zoom-in; transition: 0.3s; }
+    .qr-container:hover { background: #eef2f3; }
+</style>
+
+<div class="container mt-2">
+
+    {% if session.user_id and session.role == 'SELLER' %}
+    <div class="mb-4">
+        <h2 class="fw-bold">Hello, {{ session.full_name }}! 👋</h2>
+        <p class="text-muted small">Here is your recycling impact for Melaka today.</p>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card stat-card shadow-sm p-4 h-100">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <small class="text-muted fw-bold text-uppercase">Total Earnings</small>
+                        <h2 class="text-success fw-bold mt-2">RM {{ wallet.balance|default('0.00') }}</h2>
+                        <span class="badge bg-info bg-opacity-10 text-info fw-bold">🌱 {{ total_co2|default(0)|round(2) }} kg CO2 Saved</span>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded-circle text-success fs-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">💰</div>
+                </div>
+                <div class="mt-4 d-flex gap-2">
+                    <a href="/wallet/withdraw" class="btn btn-success rounded-pill px-3 fw-bold btn-sm shadow-sm" style="background-color: var(--eco-green); border:none; display: inline-flex; align-items: center; justify-content: center;">Withdraw</a>
+                    <a href="/request/new" class="btn btn-outline-success rounded-pill px-3 fw-bold btn-sm">New Pickup</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card stat-card shadow-sm p-4 h-100">
+                <h6 class="fw-bold text-success mb-3 text-uppercase small">Live Payout Rates</h6>
+                {% for p in prices %}
+                <div class="price-item d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-bold">{{ p.grade_name }}</span>
+                    <span class="fw-bold text-success">RM {{ p.rate_per_liter }} / L</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card stat-card shadow-sm p-4 h-100 text-center">
+                <small class="text-muted fw-bold text-uppercase mb-2 d-block">Collection Token</small>
+                <div class="qr-container d-inline-block mx-auto mb-2" data-bs-toggle="modal" data-bs-target="#qrZoomModal">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ qr_token }}" 
+                         alt="QR" class="img-fluid border p-2 bg-white" style="width: 100px; border-radius: 8px;">
+                    <div class="mt-1 small text-primary fw-bold" style="font-size: 0.6rem;">🔍 Click to enlarge</div>
+                </div>
+                <h6 class="text-success fw-bold mb-0 letter-spacing-1">{{ qr_token }}</h6>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 p-4" style="border-radius: 20px; background: white;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold mb-0">Recent Activities</h5>
+            <a href="/tasks" class="text-success text-decoration-none small fw-bold">View Full History →</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead class="table-light">
+                    <tr class="text-muted small">
+                        <th>DATE</th>
+                        <th>STATUS</th>
+                        <th class="text-end">AMOUNT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td class="small">{{ record.requested_date.strftime('%d %b %Y') }}</td>
+                        <td>
+                            {% if record.status == 'Collected' %}
+                                <span class="badge bg-info text-white rounded-pill px-3">Collected</span>
+                            {% elif record.status == 'Assigned' %}
+                                <span class="badge bg-primary rounded-pill px-3">Assigned</span>
+                            {% elif record.status == 'Cancelled' %}
+                                <span class="badge bg-danger text-white rounded-pill px-3">Cancelled</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark rounded-pill px-3">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-bold text-success">
+                            {% if record.total_payout %}RM {{ record.total_payout }}{% else %}<span class="text-muted small italic">Processing</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-center py-5 text-muted small">No activities recorded yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="qrZoomModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0" style="border-radius: 25px;">
+                <div class="modal-body text-center p-5">
+                    <h4 class="fw-bold mb-4 text-success">Scan to Verify</h4>
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ qr_token }}" 
+                         alt="Large QR" class="img-fluid mb-4 border p-3 bg-white shadow-sm" style="width: 250px;">
+                    <h2 class="fw-bold text-dark">{{ qr_token }}</h2>
+                    <button type="button" class="btn btn-light rounded-pill px-5 mt-3 fw-bold" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="row align-items-center py-5">
+        <div class="col-lg-7 text-start">
+            <h1 class="hero-title">Recycling Used Cooking Oil <br><span style="color: var(--dark-eco);">Made Easy</span></h1>
+            <p class="hero-sub">Start selling your used cooking oil seamlessly in one app. View daily selling rates, contact logistics for collection and view payment made to you, all in the EcoBate portal.</p>
+            <div class="mt-5">
+                <a href="/signup" class="btn btn-success btn-lg px-5 py-3 fw-bold mb-3 shadow" style="background-color: var(--eco-green); border:none; border-radius:12px;">Sign Up Now</a>
+            </div>
+        </div>
+        <div class="col-lg-5 d-none d-lg-block">
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <small class="fw-bold">🏠 Home</small>
+                        <div class="rounded-circle bg-success" style="width: 20px; height: 20px;"></div>
+                    </div>
+                    <p class="mb-1 small fw-bold">Cooking Oil Prices (RM)</p>
+                    <div class="graph-placeholder d-flex align-items-end justify-content-around p-2">
+                        <div class="bg-success opacity-50" style="height: 40%; width: 10px; border-radius: 5px;"></div>
+                        <div class="bg-success opacity-75" style="height: 70%; width: 10px; border-radius: 5px;"></div>
+                        <div class="bg-success" style="height: 90%; width: 10px; border-radius: 5px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %} 
+</div>
+{% endblock %}

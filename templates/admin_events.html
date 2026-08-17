@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="mb-3">
+    <a href="/admin/dashboard" class="btn-back">
+        <span class="btn-back-icon">←</span> Back to Analytics Hub
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 p-4 sticky-top" style="top: 20px;">
+            <h5 class="fw-bold mb-3">Add New Event</h5>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label small">Event Name</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Location</label>
+                    <input type="text" name="location" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Postcode</label>
+                    <input type="text" name="postcode" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Event Date</label>
+                    <input type="date" name="date" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Event Banner</label>
+                    <input type="file" name="image" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-success w-100 fw-bold">Publish Event</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <h5 class="fw-bold mb-3">Live Melaka Events</h5>
+        {% for e in events %}
+        <div class="card mb-3 shadow-sm border-0 p-3">
+            <div class="row align-items-center">
+                <div class="col-2"><img src="/static/images/{{ e.image_filename }}" class="img-fluid rounded"></div>
+                <div class="col-7">
+                    <h6 class="mb-0 fw-bold">{{ e.event_name }}</h6>
+                    <small class="text-muted">{{ e.event_date }} @ {{ e.location_name }}</small>
+                </div>
+                <div class="col-3 text-end">
+    <!-- Link points to the delete route and passes the unique event_id -->
+    <a href="/admin/delete_event/{{ e.event_id }}" 
+   class="btn btn-sm btn-danger rounded-pill px-3" 
+   onclick="return confirm('Are you sure?')">
+    Delete
+</a>
+</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

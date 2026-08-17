@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="mb-3">
+    <a href="/admin/dashboard" class="btn-back">
+        <span class="btn-back-icon">←</span> Back to Analytics Hub
+    </a>
+</div>
+
+<!-- Header & Search Bar -->
+<div class="row align-items-center mb-4">
+    <div class="col-md-6">
+        <h3 class="fw-bold mb-0">User Directory</h3>
+        <small class="text-muted">Manage system participants and role assignments.</small>
+    </div>
+    <div class="col-md-6">
+        <form action="/admin/users" method="GET" class="d-flex">
+            <div class="input-group shadow-sm rounded-pill overflow-hidden">
+                <input type="text" name="search" class="form-control border-0 px-4" 
+                       placeholder="Search Name, Email or Stall..." value="{{ search_val }}">
+                <button type="submit" class="btn btn-success px-4" style="background-color: #198754;">Search</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabs Navigation -->
+<ul class="nav nav-pills mb-4" id="adminUserTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active rounded-pill px-4 me-2 border shadow-sm" data-bs-toggle="pill" data-bs-target="#tab-sellers">
+            👥 Sellers ({{ sellers|length }})
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link rounded-pill px-4 border shadow-sm" data-bs-toggle="pill" data-bs-target="#tab-collectors">
+            🚚 Collectors ({{ collectors|length }})
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    
+    <!-- SELLERS TAB -->
+    <div class="tab-pane fade show active" id="tab-sellers">
+        <div class="card shadow-sm border-0 overflow-hidden" style="border-radius: 15px;">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small">
+                    <tr>
+                        <th class="ps-4">SELLER NAME / EMAIL</th>
+                        <th>TYPE</th>
+                        <th>STALL NAME</th>
+                        <th>ZONE</th>
+                        <th class="text-center pe-4">ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sellers %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold">{{ s.full_name }}</div>
+                            <small class="text-muted">{{ s.email }}</small>
+                        </td>
+                        <td>
+                            <span class="badge {% if s.seller_type == 'STALL' %}bg-success{% else %}bg-info text-dark{% endif %} rounded-pill px-3">
+                                {{ s.seller_type }}
+                            </span>
+                        </td>
+                        <td>{{ s.stall_name if s.stall_name else '-' }}</td>
+                        <td><small class="text-muted">{{ s.postcode[:5] }}</small></td>
+                        <td class="text-center pe-4">
+                            <a href="/admin/delete_user/{{ s.user_id }}" class="btn btn-sm btn-outline-danger rounded-pill" onclick="return confirm('Delete this seller?')">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- COLLECTORS TAB -->
+    <div class="tab-pane fade" id="tab-collectors">
+        <div class="card shadow-sm border-0 overflow-hidden" style="border-radius: 15px;">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small">
+                    <tr>
+                        <th class="ps-4">COLLECTOR NAME</th>
+                        <th>VEHICLE PLATE</th>
+                        <th>BASE ZONE</th>
+                        <th class="text-center pe-4">ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in collectors %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold">{{ c.full_name }}</div>
+                            <small class="text-muted">{{ c.email }}</small>
+                        </td>
+                        <td><span class="badge bg-dark px-3 rounded-pill">{{ c.vehicle_plate }}</span></td>
+                        <td><small class="text-muted">{{ c.postcode[:5] }}</small></td>
+                        <td class="text-center pe-4">
+                            <a href="/admin/delete_user/{{ c.user_id }}" class="btn btn-sm btn-outline-danger rounded-pill" onclick="return confirm('Delete this collector?')">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

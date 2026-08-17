@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="mb-3">
+    <a href="/tasks" class="btn-back">
+        <span class="btn-back-icon">←</span> Back to Job Pipeline
+    </a>
+</div>
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6 text-center">
+        <div class="card shadow-sm border-0 p-4" style="border-radius: 20px;">
+            <h4 class="fw-bold mb-3">Field Verification</h4>
+            <p class="text-muted small mb-4">Input measurements first, then scan the digital token.</p>
+            
+            <!-- STEP 1: FIELD MEASUREMENT INPUTS -->
+            <div class="bg-light p-4 rounded-4 mb-4 text-start border border-success border-opacity-25 shadow-sm">
+                <div class="mb-3">
+                    <label class="small fw-bold text-success">1. ACTUAL VOLUME (LITERS)</label>
+                    <div class="input-group input-group-lg mt-1">
+                        <input type="number" id="actualLiters" class="form-control border-2" placeholder="0.00" step="0.1" required>
+                        <span class="input-group-text bg-white border-2 border-start-0 text-muted">L</span>
+                    </div>
+                </div>
+                
+                <div class="mb-2">
+                    <label class="small fw-bold text-success">2. ASSESSED OIL GRADE</label>
+                    <!-- FETCHED DYNAMICALLY FROM price_setting TABLE -->
+                    <select id="gradeSelect" class="form-select form-select-lg border-2 mt-1">
+                        {% for p in prices %}
+                            <option value="{{ p.price_id }}">{{ p.grade_name }} (RM {{ p.rate_per_liter }}/L)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- STEP 2: CAMERA INTERFACE -->
+            <p class="small fw-bold text-muted mb-2 text-uppercase">3. Scan Seller Token</p>
+            <div id="reader" style="width: 100%; border-radius: 15px; overflow: hidden; background: #000; min-height: 250px;" class="mb-3 shadow-inner"></div>
+
+            <div id="scanner-controls">
+                <button id="start-btn" class="btn btn-success rounded-pill px-5 fw-bold shadow-sm py-3 w-100" style="background-color: var(--dark-eco);">
+                    📸 Open Camera to Verify
+                </button>
+            </div>
+            
+            <div id="status-msg" class="mt-3"></div>
+            <a href="/tasks" class="btn btn-link mt-2 text-decoration-none text-muted small">Cancel Transaction</a>
+        </div>
+    </div>
+</div>
+
+<!-- QR Library -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+    const html5QrCode = new Html5Qrcode("reader");
+    const startBtn = document.getElementById('start-btn');
+    const statusMsg = document.getElementById('status-msg');
+
+    const onScanSuccess = (decodedText) => {
+        // 1. Get measurements from the UI
+        const liters = document.getElementById('actualLiters').value;
+        const grade = document.getElementById('gradeSelect').value;
+
+        // 2. Data Validation
+        if (!liters || liters <= 0) {
+            alert("⚠️ Please input actual liters before scanning.");
+            location.reload(); // Reset camera if user forgot
+            return;
+        }
+
+        // 3. Stop camera and process transaction
+        html5QrCode.stop().then(() => {
+            statusMsg.innerHTML = '<div class="spinner-border text-success"></div><p class="mt-2">Committing Transaction to PostgreSQL...</p>';
+            
+            // 4. Send Multi-Attribute JSON to Python Backend
+            fetch('/verify', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    request_id: "{{ request_id }}",
+                    qr_token: decodedText,
+                    liters: liters,
+                    grade_id: grade
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    statusMsg.innerHTML = '<div class="alert alert-success fw-bold py-3 shadow-sm">✅ Verified! <br> Lorry Load & Seller Wallet Updated.</div>';
+                    setTimeout(() => { window.location.href = '/tasks'; }, 2000);
+                } else {
+                    statusMsg.innerHTML = '<div class="alert alert-danger fw-bold">❌ Error: ' + data.message + '</div>';
+                    setTimeout(() => { location.reload(); }, 4000);
+                }
+            })
+            .catch(err => {
+                statusMsg.innerHTML = '<div class="alert alert-danger">Network Error: ' + err + '</div>';
+            });
+        });
+    };
+
+    // Camera Start Logic
+    startBtn.addEventListener('click', () => {
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            { fps: 10, qrbox: 250 }, 
+            onScanSuccess
+        ).catch(err => { 
+            statusMsg.innerHTML = `<div class="alert alert-danger small">Camera Access Denied: ${err}</div>`; 
+        });
+        startBtn.style.display = 'none';
+    });
+</script>
+
+<style>
+    /* Styling for the dash-border look during the demo */
+    .shadow-inner { box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
+    .card { background-color: #ffffff; }
+</style>
+{% endblock %}

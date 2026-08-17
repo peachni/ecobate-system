@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="mb-3">
+    <a href="/login" class="btn-back">
+        <span class="btn-back-icon">←</span> Back to Login
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0 p-4" style="border-radius: 20px;">
+            <h2 class="text-success text-center fw-bold mb-4">Join EcoBate</h2>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm">
+                      {{ message }}
+                      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="/signup" id="signupForm" class="needs-validation" novalidate>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">I am a...</label>
+                    <select name="role" id="roleSelect" class="form-select" onchange="toggleFields()" required>
+                        <option value="SELLER">Seller (Household/Stall)</option>
+                        <option value="COLLECTOR">Collector (Driver)</option>
+                    </select>
+                </div>
+
+                <div id="sellerTypeSection" class="mb-3">
+                    <label class="form-label fw-bold">Seller Category</label>
+                    <select name="seller_type" id="sellerTypeSelect" class="form-select" onchange="toggleSellerSubFields()">
+                        <option value="HOUSEHOLD">Private Household</option>
+                        <option value="STALL">Food Stall / Business</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Full Name</label>
+                    <input type="text" name="name" class="form-control" placeholder="Full Name" required>
+                </div>
+
+                <!-- INSTANT EMAIL VALIDATION -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Email</label>
+                    <input type="email" name="email" id="emailInput" class="form-control" placeholder="username@email.com" required>
+                    <div class="invalid-feedback">Please enter a valid email format (e.g. name@gmail.com).</div>
+                </div>
+
+                <!-- INSTANT PHONE VALIDATION -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Phone Number</label>
+                    <input type="text" name="phone" id="phoneInput" class="form-control" placeholder="+60123456789" required>
+                    <div class="invalid-feedback">Format must be +601XXXXXXXX.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Postcode</label>
+                    <input type="text" name="postcode" class="form-control" placeholder="75450" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Security Password</label>
+                    <input type="password" name="password" id="pwInput" class="form-control" required>
+                    <div class="p-3 bg-light rounded mt-2" style="font-size: 0.8rem;">
+                        <ul class="list-unstyled mb-0">
+                            <li id="len" class="text-danger">✖ 8+ Characters</li>
+                            <li id="up" class="text-danger">✖ One Uppercase</li>
+                            <li id="num" class="text-danger">✖ One Number</li>
+                            <li id="spec" class="text-danger">✖ One Special Char (@#$%)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="stallNameGroup" class="mb-3" style="display:none;">
+                    <label class="form-label fw-bold">Stall / Business Name</label>
+                    <input type="text" name="stall_name" class="form-control" placeholder="Gerai Melaka Jaya">
+                </div>
+
+                <div id="collectorExtra" style="display:none;" class="mb-3 p-3 bg-info bg-opacity-10 rounded">
+                    <label class="form-label fw-bold">Vehicle Plate Number</label>
+                    <input type="text" name="plate_number" class="form-control" placeholder="MCE 1234">
+                </div>
+
+                <button type="submit" class="btn btn-success w-100 btn-lg fw-bold mt-3" style="background-color: #198754; border:none;">
+                    Create Secure Account
+                </button>
+            </form>
+            <div class="text-center mt-3">
+                <small class="text-muted">Already have an account? <a href="/login" class="text-success">Log In</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- 1. INSTANT FIELD VALIDATION ---
+const emailInput = document.getElementById('emailInput');
+const phoneInput = document.getElementById('phoneInput');
+
+emailInput.addEventListener('input', function() {
+    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    this.classList.toggle('is-invalid', !pattern.test(this.value));
+});
+
+phoneInput.addEventListener('input', function() {
+    const pattern = /^\+601[0-9]{8,9}$/;
+    this.classList.toggle('is-invalid', !pattern.test(this.value));
+});
+
+// --- 2. ROLE & TYPE TOGGLES ---
+function toggleFields() {
+    var role = document.getElementById("roleSelect").value;
+    document.getElementById("sellerTypeSection").style.display = (role === "SELLER") ? "block" : "none";
+    document.getElementById("collectorExtra").style.display = (role === "COLLECTOR") ? "block" : "none";
+    if (role === "SELLER") toggleSellerSubFields();
+    else document.getElementById("stallNameGroup").style.display = "none";
+}
+
+function toggleSellerSubFields() {
+    var type = document.getElementById("sellerTypeSelect").value;
+    document.getElementById("stallNameGroup").style.display = (type === "STALL") ? "block" : "none";
+}
+
+window.onload = toggleFields;
+
+// --- 3. PASSWORD STRENGTH VISUAL ---
+document.getElementById('pwInput').addEventListener('input', function() {
+    const v = this.value;
+    const reqs = {
+        len: v.length >= 8,
+        up: /[A-Z]/.test(v),
+        num: /[0-9]/.test(v),
+        spec: /[@#$%^&+=!]/.test(v)
+    };
+    for (const [key, met] of Object.entries(reqs)) {
+        const el = document.getElementById(key);
+        el.className = met ? 'text-success' : 'text-danger';
+        el.innerHTML = (met ? '✔ ' : '✖ ') + el.innerHTML.slice(2);
+    }
+});
+</script>
+{% endblock %}

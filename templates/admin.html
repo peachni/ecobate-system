@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Melaka Strategic Analytics</h2>
+    <span class="badge bg-danger px-3 rounded-pill shadow-sm">Administrator Access</span>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0 overflow-hidden" style="border-radius: 20px;">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-muted small fw-bold text-uppercase">Real-Time Operational Intelligence</h5>
+                <span class="badge bg-success bg-opacity-10 text-success border border-success">Live Sync</span>
+            </div>
+            
+            <!-- THE POWER BI EMBED SECTION -->
+            <!-- We use Bootstrap's 'ratio ratio-16x9' to ensure the dashboard fits perfectly on all screens -->
+            <div class="ratio ratio-16x9" style="background-color: #f8f9fa;">
+                <iframe 
+                    title="EcoBate Melaka Analytics" 
+                    src="https://app.powerbi.com/view?r=eyJrIjoiY2IyZjZkMWItYjZlZi00Y2M1LTllMGUtZjdlMGI1NWM2N2RmIiwidCI6IjY3N2VlYjU2LWYyZGYtNDY3NS05ZTBjLWNjZDYwMGE5MTU4MCIsImMiOjEwfQ%3D%3D"
+                    frameborder="0" 
+                    allowFullScreen="true">
+                </iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Operational Status Cards -->
+<div class="row mt-4 g-3">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 p-3 bg-success text-white h-100" style="border-radius: 12px;">
+            <small class="opacity-75">Data Tier</small>
+            <h6 class="mb-0 mt-1">PostgreSQL 18 (Relational)</h6>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 p-3 bg-dark text-white h-100" style="border-radius: 12px;">
+            <small class="opacity-75">Analytics Generation Time</small>
+            <h6 class="mb-0 mt-1">{{ now_time }}</h6>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 p-3 bg-primary text-white h-100" style="border-radius: 12px;">
+            <small class="opacity-75">Integration Status</small>
+            <h6 class="mb-0 mt-1">Active Power BI Gateway</h6>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show border-0 shadow-sm mb-3" role="alert" style="border-radius: 12px;">
+                        <small class="fw-bold">{{ message }}</small>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card p-4 shadow-sm border-0" style="border-radius: 15px; background: #fff;">
+            
+            <div class="mb-3">
+                <a href="/" class="btn-back text-decoration-none text-muted small">
+                    <span class="btn-back-icon">←</span> Back to Wallet
+                </a>
+            </div>
+
+            <h3 class="fw-bold mb-1 text-success">💰 Request Cashout</h3>
+            <p class="text-muted small mb-4">Available Account Balance: <strong class="text-dark">RM {{ "%.2f"|format(wallet.balance|default(0.00)|float) }}</strong></p>
+
+            <form action="/wallet/withdraw" method="POST">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-secondary">Select Target Bank</label>
+                    <select name="bank_name" class="form-select border-light-subtle rounded-3 py-2" required>
+                        <option value="" disabled selected>Choose your bank...</option>
+                        <option value="Maybank">Maybank</option>
+                        <option value="CIMB Bank">CIMB Bank</option>
+                        <option value="Public Bank">Public Bank</option>
+                        <option value="RHB Bank">RHB Bank</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-secondary">Bank Account Number</label>
+                    <input type="text" name="account_number" class="form-control border-light-subtle rounded-3 py-2" placeholder="e.g. 1234567890" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-secondary">Withdrawal Amount (RM)</label>
+                    <input type="number" step="0.01" min="10.00" name="amount" class="form-control border-light-subtle rounded-3 py-2" placeholder="0.00" required>
+                    <div class="form-text text-muted" style="font-size: 0.75rem;">Minimum withdrawal amount is RM 10.00.</div>
+                </div>
+
+                <button type="submit" class="btn btn-success w-100 rounded-pill fw-bold py-2 shadow-sm" style="background-color: var(--dark-eco, #198754); border: none;">
+                    Confirm Mock Cashout
+                </button>
+            </form>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}

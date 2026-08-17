@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <!-- Header Section -->
+    <div class="text-center mb-5">
+        <h1 class="fw-bold text-success">Community Collection Events</h1>
+        <p class="text-muted">Join our Melaka-wide recycling hubs. No appointment needed—just walk in!</p>
+        <span class="badge bg-light text-dark border shadow-sm">
+            <i class="bi bi-clock-history"></i> Auto-updated via Melaka Logistics Schedule
+        </span>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+        {% for event in events %}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0" style="border-radius: 20px; overflow: hidden;">
+                
+                <!-- 1. DYNAMIC IMAGE LOGIC -->
+                <div style="height: 230px; overflow: hidden; background-color: #f8f9fa;">
+                    <!-- Fetches image from static/images/ based on database filename -->
+                    <img src="{{ url_for('static', filename='images/' + event.image_filename) }}" 
+                         class="card-img-top" alt="{{ event.event_name }}"
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         onerror="this.src='https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=800';">
+                </div>
+                
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2">
+                            {{ event.event_date.strftime('%d %b %Y') }}
+                        </span>
+                        <small class="text-muted fw-bold">🕒 {{ event.start_time.strftime('%I:%M %p') }}</small>
+                    </div>
+                    
+                    <h4 class="card-title fw-bold text-dark">{{ event.event_name }}</h4>
+                    <p class="card-text text-muted mb-4">
+                        <i class="bi bi-geo-alt-fill text-danger"></i> {{ event.location_name }} ({{ event.postcode }})
+                    </p>
+                    
+                    <!-- 2. NAVIGATION BUTTON (Replaces Register Button) -->
+                    <div class="d-grid">
+                        <a href="https://www.google.com/maps/search/?api=1&query={{ event.location_name|urlencode }}+Melaka+{{ event.postcode|urlencode }}" 
+                           target="_blank" 
+                           class="btn btn-outline-success rounded-pill py-2 fw-bold shadow-sm">
+                           📍 Get Directions to Hub
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- 3. AUTO-DELETE/EMPTY STATE LOGIC -->
+        <!-- This appears if event_date < CURRENT_DATE for all records -->
+        <div class="col-12 text-center py-5">
+            <div class="p-5 bg-white rounded-4 shadow-sm border border-dashed">
+                <div class="fs-1 mb-3">📅</div>
+                <h3 class="text-muted fw-bold">No Upcoming Events</h3>
+                <p class="text-muted">All scheduled community collections have concluded. <br>Please check back later for the next Melaka Green Weekend!</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    /* Professional card hover effect */
+    .card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important; }
+    .border-dashed { border-style: dashed !important; border-width: 2px !important; }
+</style>
+
+{% endblock %}
