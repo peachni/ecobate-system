@@ -788,6 +788,34 @@ def admin_events():
     conn.close()
     return render_template('admin_events.html', events=events_list)
 
+# --- ADMIN: DELETE USER ---
+@app.route('/admin/delete_user/<string:user_id>')
+def delete_user(user_id):
+    if session.get('role') != 'ADMIN': 
+        return redirect(url_for('login'))
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        # Delete from dependent tables first to avoid foreign key violation errors
+        cur.execute('DELETE FROM public.seller WHERE user_id = %s', (user_id,))
+        cur.execute('DELETE FROM public.collector WHERE user_id = %s', (user_id,))
+        
+        # Finally delete from the main user table
+        cur.execute('DELETE FROM public."user" WHERE user_id = %s', (user_id,))
+        
+        conn.commit()
+        flash("User successfully deleted from the database.", "success")
+    except Exception as e:
+        conn.rollback()
+        print(f"DELETE USER ERROR: {str(e)}")
+        flash(f"Database Error: {str(e)}", "danger")
+    finally:
+        cur.close()
+        conn.close()
+        
+    return redirect(url_for('admin_users')) # Make sure this matches your admin users list function name
+
 # --- ADMIN: DELETE EVENT ---
 @app.route('/admin/delete_event/<uuid:id>')
 def delete_event(id):
