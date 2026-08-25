@@ -14,12 +14,15 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # --- DATABASE CONNECTION ---
 def get_db_connection():
-    return psycopg2.connect(
-        host="localhost",
-        database="ecobate_db",
-        user="postgres",
-        password="admin1234" # <--- YOUR PGADMIN PASSWORD
+    # This will check Render's environment variables first, falling back to localhost if running locally
+    conn = psycopg2.connect(
+        host=os.environ.get("DB_HOST", "localhost"),
+        database=os.environ.get("DB_NAME", "ecobate"),
+        user=os.environ.get("DB_USER", "postgres"),
+        password=os.environ.get("DB_PASSWORD", "admin1234"),
+        port=os.environ.get("DB_PORT", "5432")
     )
+    return conn
 
 # --- SECURITY: PASSWORD STRENGTH ---
 def is_strong_password(password):
@@ -483,14 +486,20 @@ def verify_scan(request_id):
         scanned_token = request.form.get('qr_code_token')
 
         liters_val = float(actual_liters) if actual_liters else 0.0
+        
+        # Calculate earnings right here
+        RATE_PER_LITER = 0.20
+        BASE_FEE = 2.00
+        total_earned = BASE_FEE + (RATE_PER_LITER * liters_val)
 
+        # 1. Update Collection Request Status
         cur.execute("""
             UPDATE collection_request 
-            SET status = 'Collected', 
-                estimated_weight_kg = %s 
+            SET status = 'Collected'
             WHERE request_id = %s AND status = 'Assigned'
-        """, (liters_val, str(request_id)))
+        """, (str(request_id),))
         
+        # 2. Insert Collection Detail
         cur.execute("""
             INSERT INTO collection_detail (request_id, liters, oil_grade, recorded_at)
             VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
@@ -498,15 +507,21 @@ def verify_scan(request_id):
             DO UPDATE SET liters = EXCLUDED.liters, oil_grade = EXCLUDED.oil_grade
         """, (str(request_id), liters_val, oil_grade or 'Grade A'))
 
+        # 3. Log the earnings directly into wallet_transaction (No new table needed!)
         cur.execute("""
-            UPDATE wallet_transaction 
-            SET status = 'Collected',
-                completed_at = CURRENT_TIMESTAMP
-            WHERE request_id = %s
-        """, (str(request_id),))
+            INSERT INTO wallet_transaction (user_id, amount, type, description, request_id, recorded_at)
+            VALUES (%s, %s, 'EARNING', %s, %s, CURRENT_TIMESTAMP)
+        """, (session['user_id'], total_earned, f"Collection payout for {liters_val}L", str(request_id)))
+
+        # 4. Update Collector's Wallet Balance
+        cur.execute("""
+            UPDATE wallet 
+            SET balance = balance + %s 
+            WHERE user_id = %s
+        """, (total_earned, session['user_id']))
         
         conn.commit()
-        flash("Oil successfully collected and updated!", "success")
+        flash("Oil successfully collected and earnings credited!", "success")
         
     except Exception as e:
         conn.rollback()
