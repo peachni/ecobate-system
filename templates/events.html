@@ -27,9 +27,9 @@
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2">
-                            {{ event.event_date.strftime('%d %b %Y') }}
+                            {{ event.event_date.strftime('%d %b %Y') if event.event_date else 'Coming Soon' }}
                         </span>
-                        <small class="text-muted fw-bold">🕒 {{ event.start_time.strftime('%I:%M %p') }}</small>
+                        <small class="text-muted fw-bold">🕒 {{ event.start_time.strftime('%I:%M %p') if event.start_time else 'TBD' }}</small>
                     </div>
                     
                     <h4 class="card-title fw-bold text-dark">{{ event.event_name }}</h4>
