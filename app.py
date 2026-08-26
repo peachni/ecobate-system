@@ -111,7 +111,7 @@ def login():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        name = request.form.get('name')
+        full_name = request.form.get('full_name') # Make sure we use full_name consistently
         email = request.form.get('email')
         phone = request.form.get('phone')
         password = request.form.get('password')
@@ -120,7 +120,6 @@ def signup():
         seller_type = request.form.get('seller_type')
         stall_name_input = request.form.get('stall_name')
         plate = request.form.get('plate_number')
-        full_name = request.form.get('full_name')
 
         if not full_name or not full_name.strip():
              flash("Full Name is required!", "danger")
@@ -136,13 +135,13 @@ def signup():
         cur = conn.cursor()
         
         try:
-            # 1. Insert into Master User Table
+            # 1. Insert into Master User Table (FIXED: using full_name here)
             cur.execute('INSERT INTO "user" (full_name, email, phone_number, password_hash, postcode, role) VALUES (%s,%s,%s,%s,%s,%s) RETURNING user_id', 
-                        (name, email, phone, hashed_pw, postcode, role))
+                        (full_name, email, phone, hashed_pw, postcode, role))
             uid = cur.fetchone()[0]
 
             if role == 'SELLER':
-                final_name = name if seller_type == 'HOUSEHOLD' else stall_name_input
+                final_name = full_name if seller_type == 'HOUSEHOLD' else stall_name_input
                 token = f"QR_{email.split('@')[0].upper()}"
                 cur.execute("INSERT INTO seller (user_id, stall_name, qr_code_token, seller_type) VALUES (%s,%s,%s,%s)", 
                             (uid, final_name, token, seller_type))
