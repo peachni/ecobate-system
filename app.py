@@ -124,6 +124,7 @@ def signup():
 
         if not full_name or not full_name.strip():
              flash("Full Name is required!", "danger")
+             return redirect(url_for('signup'))
     
         if not is_strong_password(password):
             flash("Password must be 8+ chars with Uppercase, Number, and Special Char.", "danger")
